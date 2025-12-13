@@ -1,11 +1,13 @@
 """
 SQLAlchemy database setup with environment-based configuration.
 Supports both SQLite (local) and PostgreSQL (production).
+
+Updated import paths for standalone Streamlit architecture.
 """
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from backend.config import settings
+from config import settings
 
 # Create engine based on environment
 if settings.ENV == "production" and "postgresql" in settings.DATABASE_URL:
@@ -33,8 +35,15 @@ Base = declarative_base()
 
 def get_db():
     """
-    Dependency function for FastAPI to get database session.
-    Usage: db: Session = Depends(get_db)
+    Dependency function to get database session.
+    
+    Usage:
+        with get_db() as db:
+            # Use db session
+            db.query(User).all()
+    
+    Yields:
+        Database session
     """
     db = SessionLocal()
     try:

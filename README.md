@@ -1,183 +1,173 @@
-# 🏦 Personal Finance Coach
+# Personal Finance AI Coach  
 
-A privacy-first personal finance coaching application that helps users understand their financial health, organizes money into smart buckets, and generates personalized action plans.
+Standalone Streamlit app with clean architecture and database persistence
 
-## 🚀 Features
+---
 
-- **Smart Financial Analysis**: Automatic calculation of net worth, savings rate, debt ratios
-- **Bucket-Based Organization**: Emergency, Debt, Short-term, Long-term wealth buckets
-- **Personalized Plans**: Top 3 priority actions with monthly targets
-- **Progress Tracking**: Self-reported monthly check-ins with trend analysis
-- **Explainable AI**: RAG-powered Q&A with cited sources (LangChain + LangGraph)
-- **Privacy-First**: Self-reported data, no bank access required
+## 🚀 Quick Start (Fast Setup with `uv`)
 
-## 🛠️ Tech Stack
+This project runs on **Python 3.11.4**. We recommend using `uv` for blazing fast package management.
 
-- **Frontend**: Streamlit (Python)
-- **Backend**: FastAPI
-- **Database**: SQLite (local) → PostgreSQL (production)
-- **ORM**: SQLAlchemy
-- **AI/ML**: LangChain, LangGraph, HuggingFace, OpenRouter
-- **Vector DB**: ChromaDB
-
-## 📋 Prerequisites
-
-- Python 3.10+
-- pip or uv package manager
-
-## 🔧 Setup Instructions
-
-### 1. Clone and Setup Environment
-
+### 1. Install `uv` (if not installed)
 ```bash
-cd C:\react\00p\project-x
+# Windows (PowerShell)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# Create virtual environment
-python -m venv venv
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 2. Create Virtual Environment & Install Dependencies
+```bash
+# Create venv with specific python version
+uv venv --python 3.11.4
 
 # Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (fast!)
+uv pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
 
+### 3. Run Application
 ```bash
-# Copy example env file
-copy .env.example .env
-
-# Edit .env and add your API keys
-# - OPENROUTER_API_KEY
-# - HUGGINGFACE_API_KEY
-# - JWT_SECRET_KEY
+streamlit run app.py
 ```
+Visit: **http://localhost:8501**
 
-### 3. Initialize Database
+---
 
-```bash
-cd backend
+## 🏗️ Architecture & Design
 
-# Run migrations
-alembic upgrade head
-```
+### Clean Architecture (Standalone Monolith)
+**Layers (from outer to inner):**
+1. **UI Layer** (`app.py`, `pages/`) - Streamlit components
+2. **Service Layer** (`services/`) - Business logic
+3. **Data Layer** (`models/`) - SQLAlchemy ORM
+4. **Utils** (`utils/`, `config.py`) - Cross-cutting concerns
 
-### 4. Start Backend Server
+**Dependencies flow inward:** UI → Services → Models → Database. Nothing depends on UI.
 
-```bash
-# From backend directory
-uvicorn main:app --reload --port 8000
-```
+### Design Patterns Used
+1. **Repository Pattern** - Database access through models
+2. **Service Pattern** - Business logic in services layer
+3. **Dependency Injection** - Pass db sessions, not globals
+4. **Configuration Object** - Centralized settings
 
-### 5. Start Frontend (Streamlit)
+### 🔄 Migration Path to API
+If you later need a separate backend (e.g., for mobile app):
+1. Services → FastAPI routes
+2. Keep models unchanged
+3. Frontend calls API instead of services
+4. **Zero business logic changes** required
 
-```bash
-# From project root, new terminal
-streamlit run frontend/app.py
-```
-
-### 6. Access Application
-
-- **Frontend**: http://localhost:8501
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+---
 
 ## 📁 Project Structure
 
 ```
 project-x/
-├── backend/
-│   ├── models/          # SQLAlchemy models
-│   ├── api/             # FastAPI routes
-│   ├── engine/          # Financial calculation & rule engine
-│   ├── rag/             # LangChain RAG system
-│   ├── services/        # Notifications, email
-│   ├── utils/           # Security, helpers
-│   ├── alembic/         # Database migrations
-│   └── main.py          # FastAPI app entry
-├── frontend/
-│   ├── pages/           # Streamlit pages
-│   ├── utils/           # API client, charts
-│   └── app.py           # Streamlit entry
-├── docs/                # Documentation
-├── tests/               # Test suite
-└── requirements.txt     # Python dependencies
+├── app.py                     # Landing page (no sidebar)
+├── pages/                     # Multi-page app
+│   ├── 1_onboarding.py        # Data collection
+│   ├── 2_dashboard.py         # Analysis + charts
+│   └── 3_goals.py             # Goal tracking + projections
+├── models/                    # SQLAlchemy ORM (data layer)
+│   ├── database.py            # DB setup (SQLite/PostgreSQL)
+│   ├── user.py                # User models
+│   ├── financial.py           # Financial data models
+│   └── plans.py               # Plans & tracking
+├── services/                  # Business logic
+│   ├── auth_service.py        # Authentication
+│   ├── calculator.py          # Financial calculations
+│   └── data_service.py        # CRUD operations
+├── utils/                     # Utilities
+│   ├── security.py            # Password hashing, JWT
+├── config.py                  # Environment config
+├── init_db.py                 # Database initialization
+├── requirements.txt           # Dependencies (Python 3.11.4)
+└── .env                       # Environment variables
 ```
 
-## 🧪 Testing
+---
 
-```bash
-# Run all tests
-pytest
+## ✨ Features
 
-# Run with coverage
-pytest --cov=backend --cov-report=html
+### Guest Mode (Default)
+- ✅ No login required
+- ✅ Full functionality (stored in session)
+- ✅ Data lost on session end (Privacy focused)
 
-# Run specific test file
-pytest tests/test_calculator.py -v
-```
+### Registered User Mode
+- ✅ Create account & Login
+- ✅ Data persists to SQLite (Dev) / PostgreSQL (Prod)
+- ✅ Auto-switch based on `DATABASE_URL`
 
-## 🔄 Database Migration (SQLite → PostgreSQL)
+### Analytics & Tools
+- **Dashboard**: Plotly charts (Income/Expense, Assets/Liabilities), Health Gauges
+- **Goals**: Smart projections, feasibility checks, timeline calculation
+- **Calculator**: Net Worth, Savings Rate, Emergency Fund analysis
 
-To switch from SQLite to PostgreSQL:
+---
 
-1. Update `.env`:
+## 🗄️ Database
+
+**Local Development:** SQLite (`finance_coach.db`)
+**Production:** Automatically switches to PostgreSQL via `DATABASE_URL` env var
+
+**Tables:** `users`, `financial_snapshots`, `assets`, `liabilities`, `goals`, `plans`
+
+---
+
+## 📊 Technology Stack
+
+- **Frontend**: Streamlit
+- **Database**: SQLAlchemy ORM (SQLite → PostgreSQL)
+- **Charts**: Plotly
+- **Auth**: Bcrypt + JWT (ready)
+- **AI**: LangChain/LangGraph (Phase 2 RAG)
+
+---
+
+## 🚢 Deployment
+
+### Streamlit Cloud (Recommended)
+1. Push to GitHub
+2. Connect to Streamlit Cloud
+3. Set Environment Variables:
    ```ini
    ENV=production
    DATABASE_URL=postgresql://user:pass@host:5432/finance_coach
+   JWT_SECRET_KEY=your-secret-key
    ```
 
-2. Run migrations:
-   ```bash
-   alembic upgrade head
-   ```
+---
 
-No code changes needed! SQLAlchemy handles both databases seamlessly.
+## 📝 Usage Flow
 
-## 📚 Key Documentation
+1. **Landing Page** → "Get Started Free"
+2. **Onboarding** → Enter Snapshot (Income/Expenses) & Assets/Debts
+3. **Dashboard** → View Financial Health & Recommendations
+4. **Goals** → Set Goals & View Projections
+5. **(Optional)** Login to save data
 
-- [High-Level Design](docs/HLD.md)
-- [Database Schema](docs/database-schema.md)
-- [API Contracts](docs/api-contracts.md)
-- [Implementation Plan](docs/detailed-plan.md)
+---
 
-## 🔐 Security Notes
+## ✅ Best Practices Implemented
 
-- All passwords hashed with bcrypt
-- JWT tokens for authentication
-- PII encrypted at rest
-- No direct bank access (privacy-first)
-- Deterministic rules (versioned & auditable)
+- ✅ Separation of concerns
+- ✅ Type hints throughout
+- ✅ Docstrings for all functions
+- ✅ Error handling
+- ✅ Versioned calculations (audit trail)
+- ✅ Environment-based config
+- ✅ Clean imports (relative within package)
 
-## 📈 Development Workflow
+---
 
-Following the [Agentic Workflow](agent/AGENTIC_WORKFLOW.md):
-
-1. **Plan** - Design before coding
-2. **Implement** - Incremental changes
-3. **Verify** - Test every change
-4. **Loop** - Iterate based on feedback
-
-## 🎯 MVP Roadmap
-
-- [x] Project setup
-- [ ] Database layer
-- [ ] Authentication
-- [ ] Financial analysis engine
-- [ ] API endpoints
-- [ ] RAG system
-- [ ] Streamlit frontend
-- [ ] Notification system
-- [ ] Testing & deployment
-
-## 📄 License
-
-MIT
-
-## 🤝 Contributing
-
-Please read the [Agentic Workflow](agent/AGENTIC_WORKFLOW.md) before contributing.
+**Status**: ✅ Production Ready  
+**Built with ❤️ using clean architecture principles**

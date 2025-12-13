@@ -7,7 +7,7 @@ from datetime import datetime
 import uuid
 import enum
 
-from backend.models.database import Base
+from models.database import Base
 
 
 class BucketType(str, enum.Enum):

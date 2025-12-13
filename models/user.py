@@ -1,14 +1,15 @@
 """
 User and UserProfile models for authentication and personal information.
+
+Updated import paths for standalone Streamlit architecture.
 """
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Enum
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 import enum
 
-from backend.models.database import Base
+from models.database import Base
 
 
 class RiskProfile(str, enum.Enum):

@@ -1,11 +1,13 @@
 """
 Security utilities for password hashing and JWT token management.
+
+Updated import paths for standalone Streamlit architecture.
 """
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from backend.config import settings
+from config import settings
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
