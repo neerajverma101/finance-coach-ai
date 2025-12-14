@@ -45,9 +45,9 @@ class User(Base):
     assets = relationship("Asset", back_populates="user", cascade="all, delete-orphan")
     liabilities = relationship("Liability", back_populates="user", cascade="all, delete-orphan")
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
-    buckets = relationship("Bucket", back_populates="user", cascade="all, delete-orphan")
-    plans = relationship("Plan", back_populates="user", cascade="all, delete-orphan")
-    progress = relationship("MonthlyProgress", back_populates="user", cascade="all, delete-orphan")
+    # buckets = relationship("Bucket", back_populates="user", cascade="all, delete-orphan")
+    # plans = relationship("Plan", back_populates="user", cascade="all, delete-orphan")
+    # progress = relationship("MonthlyProgress", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"

@@ -31,7 +31,12 @@ st.title("📊 Your Financial Dashboard")
 
 # Check if analysis exists
 # Auto-calculate if data exists but analysis is missing (for returning guests)
-if 'guest_data' in st.session_state and st.session_state.guest_data.get('snapshot') and not st.session_state.guest_data.get('analysis'):
+# Auto-calculate if data exists but analysis is missing (for returning guests)
+has_data = (st.session_state.guest_data.get('snapshot') or 
+            st.session_state.guest_data.get('assets') or 
+            st.session_state.guest_data.get('liabilities'))
+
+if 'guest_data' in st.session_state and has_data and not st.session_state.guest_data.get('analysis'):
     from services.calculator import FinancialCalculator
     try:
         analysis = FinancialCalculator.analyze_financial_health(
@@ -188,66 +193,100 @@ else:
         st.warning(f"⚠️ **Needs attention.** Overall Score: **{scores['overall_health']:.0f}/100**")
         st.error("Follow the recommendations below to improve your financial situation.")
     
-    # Personalized Recommendations
+    # Personalized Recommendations via Rule Engine
     st.markdown("---")
     st.markdown("### 🎯 Your Top 3 Priorities")
     
-    recommendations = []
+    from services.rule_service import RuleService, PriorityLevel
     
-    # Priority 1: Emergency Fund
-    if metrics['emergency_months'] < 3:
-        target_emergency = snapshot['monthly_expenses'] * 3
-        gap = target_emergency - snapshot['current_savings']
-        months_needed = gap / metrics['monthly_surplus'] if metrics['monthly_surplus'] > 0 else 0
-        recommendations.append({
-            'priority': 1,
-            'title': '🚨 Build Emergency Fund',
-            'description': f"You need **₹{gap:,.0f} more** to reach 3 months of expenses",
-            'action': f"Save ₹{gap/6:,.0f}/month for 6 months" if gap > 0 else "Maintain current level",
-            'impact': f"Achieve in {months_needed:.0f} months at current savings rate" if months_needed > 0 else "Already achieved!"
-        })
+    # Get priorities from Rule Engine
+    recommendations = RuleService.evaluate_priorities(
+        st.session_state.guest_data['snapshot'],
+        st.session_state.guest_data['liabilities']
+    )
     
-    # Priority 2: High-Interest Debt
-    high_interest_debts = [d for d in st.session_state.guest_data['liabilities'] if d['interest_rate'] > 0.15]
-    if high_interest_debts:
-        total_high_interest = sum(d['outstanding'] for d in high_interest_debts)
-        recommendations.append({
-            'priority': 2,
-            'title': '💳 Pay Off High-Interest Debt',
-            'description': f"You have **₹{total_high_interest:,.0f}** in high-interest debt (>15% APR)",
-            'action': f"Focus extra ₹{metrics['monthly_surplus']*0.7:,.0f}/month on highest interest debt",
-            'impact': f"Save thousands in interest payments"
-        })
-    
-    # Priority 3: Increase Savings Rate
-    if metrics['savings_rate'] < 20:
-        target_rate = 20
-        target_savings = snapshot['monthly_income'] * (target_rate / 100)
-        gap = target_savings - (snapshot['monthly_income'] - snapshot['monthly_expenses'])
-        recommendations.append({
-            'priority': 3,
-            'title': '📊 Increase Savings Rate',
-            'description': f"Current: **{metrics['savings_rate']:.1f}%**, Target: **{target_rate}%**",
-            'action': f"Reduce expenses by ₹{gap:,.0f}/month",
-            'impact': f"Save an additional ₹{gap*12:,.0f}/year"
-        })
-    
-    # If financially healthy, suggest investment goals
-    if not recommendations and scores['overall_health'] >= 75:
-        recommendations.append({
-            'priority': 1,
-            'title': '🚀 Invest for Growth',
-            'description': "Your financial foundation is strong!",
-            'action': f"Invest ₹{metrics['monthly_surplus']*0.8:,.0f}/month in mutual funds or index funds",
-            'impact': "Build long-term wealth and achieve financial freedom faster"
-        })
-    
+    if not recommendations:
+        st.success("🎉 You have no critical financial issues! Great job!")
+        st.info("Consider expanding your investments or saving for a major goal.")
+        
     # Display recommendations
     for rec in recommendations[:3]:  # Top 3 only
-        with st.expander(f"**Priority {rec['priority']}: {rec['title']}**", expanded=True):
-            st.markdown(f"**Situation:** {rec['description']}")
-            st.markdown(f"**Action:** {rec['action']}")
-            st.markdown(f"**Impact:** {rec['impact']}")
+        # Determine color based on priority
+        emoji = "⚪"
+        if rec.priority == PriorityLevel.CRITICAL:
+            emoji = "🔴"
+        elif rec.priority == PriorityLevel.HIGH:
+            emoji = "🟠" 
+        elif rec.priority == PriorityLevel.MEDIUM:
+            emoji = "🟡"
+        elif rec.priority == PriorityLevel.LOW:
+            emoji = "🟢"
+            
+        with st.expander(f"**{emoji} {rec.title}**", expanded=True):
+            st.markdown(f"**Situation:** {rec.description}")
+            if rec.recommended_amount:
+                st.markdown(f"**Target:** ₹{rec.recommended_amount:,.0f}")
+                
+            # Action button based on type
+            if rec.action_type == 'save':
+                if st.button("Set Savings Goal", key=f"act_{rec.rule_id}"):
+                    st.session_state.guest_data['goals'].append({
+                        'name': rec.title,
+                        'target_amount': rec.recommended_amount or 0,
+                        'current_progress': 0,
+                        'category': 'Emergency',
+                        'target_date': None
+                    })
+                    st.toast("Goal added! Go to Goals page to finalize.", icon="✅")
+
+    # Smart Allocations (Bucket Engine)
+    if 'metrics' in locals() and metrics['monthly_surplus'] > 0:
+        st.markdown("---")
+        
+        from services.bucket_service import BucketService
+        
+        # 1. Get Recommended Framework
+        suggested_framework_enum = RuleService.recommend_framework(metrics)
+        suggested_framework_name = suggested_framework_enum.value
+        
+        st.markdown(f"### 🏺 Smart Allocations ({suggested_framework_name})")
+        st.info(f"💡 Strategy: **{suggested_framework_name}** selected based on your profile.")
+        
+        # 2. Allocate using this framework
+        allocations = BucketService.allocate_surplus(
+            metrics['monthly_surplus'], 
+            recommendations,
+            framework=suggested_framework_name
+        )
+        
+        if allocations:
+            b_col1, b_col2 = st.columns([1, 1])
+            
+            with b_col1:
+                # Allocation Pie Chart
+                labels = [a.name for a in allocations]
+                values = [a.amount for a in allocations]
+                
+                fig_bucket = go.Figure(data=[go.Pie(
+                    labels=labels,
+                    values=values,
+                    hole=0.5,
+                    textinfo='label+percent',
+                    marker=dict(colors=px.colors.qualitative.Pastel)
+                )])
+                fig_bucket.update_layout(
+                    showlegend=False,
+                    height=250,
+                    margin=dict(l=0, r=0, t=20, b=0)
+                )
+                st.plotly_chart(fig_bucket, use_container_width=True)
+            
+            with b_col2:
+                st.write(f"**Total Surplus: ₹{metrics['monthly_surplus']:,.0f}**")
+                for alloc in allocations:
+                    st.write(f"**{alloc.name}**: ₹{alloc.amount:,.0f} ({alloc.percentage}%)")
+                    st.progress(alloc.percentage / 100)
+
     
     # Breakdown
     st.markdown("---")

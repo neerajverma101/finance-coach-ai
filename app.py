@@ -36,9 +36,6 @@ if guest_id:
     except Exception as e:
         print(f"Error initializing guest: {e}")
 
-    except Exception as e:
-        print(f"Error initializing guest: {e}")
-
 # Initialize Session State (Prevent KeyErrors)
 if "guest_data" not in st.session_state:
     st.session_state.guest_data = {

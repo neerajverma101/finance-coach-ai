@@ -144,6 +144,8 @@ class AuthService:
             }
             
         finally:
+            db.close()
+
     @staticmethod
     def get_or_create_guest(guest_id: str) -> Dict[str, Any]:
         """
@@ -273,18 +275,18 @@ class AuthService:
                 
             return {
                 "snapshot": {
-                    "income": float(snapshot.monthly_income) if snapshot else 0,
-                    "expenses": float(snapshot.monthly_expenses) if snapshot else 0,
-                    "savings": float(snapshot.current_savings) if snapshot else 0
+                    "monthly_income": float(snapshot.monthly_income) if snapshot else 0,
+                    "monthly_expenses": float(snapshot.monthly_expenses) if snapshot else 0,
+                    "current_savings": float(snapshot.current_savings) if snapshot else 0
                 },
                 "assets": [
                     {"type": a.type.value, "name": a.name, "value": float(a.current_value)} for a in assets
                 ],
                 "liabilities": [
-                    {"type": l.type.value, "name": l.name, "amount": float(l.outstanding_amount), "interest_rate": float(l.interest_rate)*100} for l in liabilities
+                    {"type": l.type.value, "name": l.name, "outstanding": float(l.outstanding_amount), "interest_rate": float(l.interest_rate)*100} for l in liabilities
                 ],
                 "goals": [
-                    {"name": g.name, "amount": float(g.target_amount), "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else None, "category": g.category.value} for g in goals
+                    {"name": g.name, "target_amount": float(g.target_amount), "date": g.target_date.strftime("%Y-%m-%d") if g.target_date else None, "category": g.category.value} for g in goals
                 ],
                 "analysis": {} 
             }

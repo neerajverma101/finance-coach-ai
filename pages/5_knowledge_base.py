@@ -100,6 +100,9 @@ with st.expander("📂 Document Management", expanded=not st.session_state.uploa
                                         if data.get('liabilities'):
                                             st.session_state.guest_data['liabilities'].extend(data['liabilities'])
                                             
+                                        # Force re-calculation on Dashboard
+                                        st.session_state.guest_data['analysis'] = None
+                                            
                                         st.success(f"📊 Updated dashboard with data from {file.name}")
                                 except Exception as e:
                                     print(f"Extraction failed: {e}")

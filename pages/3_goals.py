@@ -52,11 +52,11 @@ with st.expander("➕ Add New Goal", expanded=len(st.session_state.guest_data['g
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            target_amount = st.number_input("Target Amount (₹)", min_value=0, step=10000, value=100000)
+            target_amount = st.number_input("Target Amount (₹)", min_value=0.0, step=10000.0, value=100000.0)
         with col2:
             months = st.number_input("Months to Achieve", min_value=1, max_value=360, value=12)
         with col3:
-            current_progress = st.number_input("Current Progress (₹)", min_value=0, step=5000, value=0)
+            current_progress = st.number_input("Current Progress (₹)", min_value=0.0, step=5000.0, value=0.0)
         
         category = st.selectbox(
             "Category",
@@ -89,7 +89,7 @@ with st.expander("➕ Add New Goal", expanded=len(st.session_state.guest_data['g
                     'current_progress': current_progress,
                     'target_date': (datetime.now() + timedelta(days=months*30)).strftime("%Y-%m-%d"),
                     'category': category,
-                    'required_monthly': required_monthly if 'required_monthly' in locals() else 0,
+                    'required_monthly': required_monthly if 'required_monthly' in locals() else (target_amount - current_progress)/months if months > 0 else 0,
                 'created_at': datetime.now().strftime("%Y-%m-%d")
                 })
                 
